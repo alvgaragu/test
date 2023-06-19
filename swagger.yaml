@@ -1,389 +1,557 @@
-openapi: 3.0.0
-info:
-  description: |
-  version: 1.0.0
-  title: Masticketing-itsm-connector
-  termsOfService: http://swagger.io/terms/
-  contact:
-    email: ticketing_squad@masmovil.com
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-
-servers:
-  - url: 'https://ticketing-itsm-connector.sta.k8s.masmovil.com'
-  - url: 'https://ticketing-itsm-connector.k8s.masmovil.com'
-
-tags:
-  - name: Ticket
-
-paths:
-  '/ticket/{ticketId}':
-    patch:
-      security:
-        - bearerAuth: [ ]
-      tags:
-        - Ticket
-      summary: Update an existing ticket
-      description: Update a ticket
-      operationId: updateTicket
-      parameters:
-        - in: path
-          name: ticketId
-          required: true
-          schema:
-            type: string
-            description: MASMOVIL primary key of the ticket
-      requestBody:
-        description: fields to update an existing ticket
-        required: true
-        content:
-          application/json:
-            schema:
-              anyOf:
-                - $ref: '#/components/schemas/updateTicket'
-                - $ref: '#/components/schemas/attachmentBase64'
-            examples:
-              "assign_ticket":
-                $ref: '#/components/examples/assign_ticket'
-              "resolution":
-                $ref: '#/components/examples/resolution'
-              "send_info":
-                $ref: '#/components/examples/send_info'
-              "update_ticket":
-                $ref: '#/components/examples/update_ticket'
-              "request_info":
-                $ref: '#/components/examples/request_info'
-
-      responses:
-        204:
-          description: Ticket has been updated successfully
-        400:
-          description: BadRequest. E.G.:There is one missing field or the value is not the type required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequest'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/Unauthorized1'
-                  - $ref: '#/components/schemas/Unauthorized2'
-        403:
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Forbidden'
-        404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFound'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerError'
-
-  '/ticket/{ticketId}/callback':
-    post:
-      security:
-        - bearerAuth: [ ]
-      tags:
-        - Ticket
-      summary: Send async callback from MM->E/// operation
-      description: Handle async callback
-      operationId: asyncCallback
-      parameters:
-        - in: path
-          name: ticketId
-          required: true
-          schema:
-            type: string
-            description: MASMOVIL primary key of the ticket
-      requestBody:
-        description: fields required in callback request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/asyncCallback'
-            examples:
-              "create_OK_callback":
-                $ref: '#/components/examples/create_OK_callback'
-              "create_KO_callback":
-                $ref: '#/components/examples/create_KO_callback'
-              "update_OK_callback":
-                $ref: '#/components/examples/update_OK_callback'
-              "update_KO_callback":
-                $ref: '#/components/examples/update_KO_callback'
-
-      responses:
-        204:
-          description: Ticket has been updated successfully
-        400:
-          description: BadRequest. E.G.:There is one missing field or the value is not the type required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BadRequest'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/Unauthorized1'
-                  - $ref: '#/components/schemas/Unauthorized2'
-        403:
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Forbidden'
-        404:
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotFound'
-        500:
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerError'
-
-components:
-  schemas:
-    updateTicket:
-      type: object
-      properties:
-        status:
-          type: string
-          enum:
-            - OPENACTIVE
-            - DEFERRED.AWAITING-INFORMATION
-            - CLOSED.CANCELED
-            - CLOSED
-            - CLEARED
-          description: ticket status
-        dialog:
-          type: string
-          maxLength: 4000
-          description: information about the issue
-        network_closing_category:
-          type: string
-        network_closing_subcategory:
-          type: string
-    asyncCallback:
-      required:
-        - status_sync
-      type: object
-      properties:
-        status_sync:
-          type: string
-          enum:
-            - SYNC_SUCCESSFULLY
-            - SYNC_FAILED
-          description: ticket status
-        status:
-          type: string
-          enum:
-            - OPENACTIVE
-            - DEFERRED.AWAITING-INFORMATION
-            - CLOSED.CANCELED
-            - CLOSED
-            - CLEARED
-          description: ticket status
-        network_ticket_code:
-          type: string
-        remote_exception:
-          type: string
-    attachmentBase64:
-      type: object
-      description: An attachment.
-      properties:
-        content:
-          type: string
-          description: The actual contents of the attachment object, if embedded, encoded as base64
-        mimeType:
-          type: string
-          description: Attachment mime type such as extension file for video, picture and document
-        name:
-          type: string
-          description: The name of the attachment
-    BadRequest:
-      type: object
-      description: bad request
-      properties:
-        code:
-          type: string
-          example: '0015'
-        status:
-          type: string
-          example: "Bad Request"
-        message:
-          type: string
-          example: "message about the error"
-        detailMsg:
-          type: string
-          example: "bad request error"
-    Unauthorized1:
-      type: string
-      example: Jwt is expired
-    Unauthorized2:
-      type: object
-      properties:
-        code:
-          type: string
-          example: '0003'
-        status:
-          type: string
-          example: UNAUTHORIZED
-        message:
-          type: string
-          example: Unauthorized
-        detailMsg:
-          type: string
-          example: 'You are not allowed to perform this operation. Your token tenant does not match path tenant.'
-    Forbidden:
-      type: string
-      example: Forbidden
-    NotFound:
-      type: object
-      description: Not Found
-      properties:
-        code:
-          type: string
-          example: '0001'
-        status:
-          type: string
-          example: "Not Found"
-        message:
-          type: string
-          example: "message about the error"
-        detailMsg:
-          type: string
-          example: "Not Found error"
-    InternalServerError:
-      type: object
-      description: Internal Server Error
-      properties:
-        code:
-          type: string
-          example: '0013'
-        status:
-          type: string
-          example: "Internal Server Error"
-        message:
-          type: string
-          example: "message about the error"
-        detailMsg:
-          type: string
-          example: "Internal Server Error"
-
-  examples:
-    "resolution":
-      value: {
-        "status": "CLEARED",
-        "network_closing_category": "<category>",
-        "network_closing_subcategory": "<subcategory>",
-        "attachments": [
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "",
+    "version": "1.0.0",
+    "title": "Masticketing-itsm-connector",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": {
+      "email": "ticketing_squad@masmovil.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://ticketing-itsm-connector.sta.k8s.masmovil.com"
+    },
+    {
+      "url": "https://ticketing-itsm-connector.k8s.masmovil.com"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Ticket"
+    }
+  ],
+  "paths": {
+    "/ticket/{ticketId}": {
+      "patch": {
+        "security": [
           {
-            "content": "ZmlsZSBudW1iZXIgMQ==",
-            "mimeType": "text/plain",
-            "name": "<filename>"
+            "bearerAuth": []
           }
         ],
-        "dialog": "<resolution comment>"
-      }
-    "send_info":
-      value: {
-        "dialog": "<some comment>",
-        "attachments": [
+        "tags": [
+          "Ticket"
+        ],
+        "summary": "Update an existing ticket",
+        "description": "Update a ticket",
+        "operationId": "updateTicket",
+        "parameters": [
           {
-            "content": "ZmlsZSBudW1iZXIgMQ==",
-            "mimeType": "text/plain",
-            "name": "<filename>"
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "MASMOVIL primary key of the ticket"
+            }
           }
         ],
-        "labels": [
-          "label1",
-          "label2"
-        ]
+        "requestBody": {
+          "description": "fields to update an existing ticket",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/updateTicket"
+                  },
+                  {
+                    "$ref": "#/components/schemas/attachmentBase64"
+                  }
+                ]
+              },
+              "examples": {
+                "assign_ticket": {
+                  "$ref": "#/components/examples/assign_ticket"
+                },
+                "resolution": {
+                  "$ref": "#/components/examples/resolution"
+                },
+                "send_info": {
+                  "$ref": "#/components/examples/send_info"
+                },
+                "update_ticket": {
+                  "$ref": "#/components/examples/update_ticket"
+                },
+                "request_info": {
+                  "$ref": "#/components/examples/request_info"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Ticket has been updated successfully"
+          },
+          "400": {
+            "description": "BadRequest. E.G.:There is one missing field or the value is not the type required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Unauthorized1"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Unauthorized2"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        }
       }
-    "update_ticket":
-      value: {
-        "network_closing_category": "<category>",
-        "network_closing_subcategory": "<subcategory>",
-        "attachments": [
+    },
+    "/ticket/{ticketId}/callback": {
+      "post": {
+        "security": [
           {
-            "content": "ZmlsZSBudW1iZXIgMQ==",
-            "mimeType": "text/plain",
-            "name": "<filename>"
+            "bearerAuth": []
           }
         ],
-        "dialog": "<some comment>",
-        "field1": "",
-        "field2": "",
-        "field3": "",
-        "field4": "",
-        "field5": "",
-        "fieldN": ""
-      }
-    "assign_ticket":
-      value: {
-        "status": "OPENACTIVE",
-        "network_ticket_code": "E-001"
-      }
-    "request_info":
-      value: {
-        "status": "DEFERRED.AWAITING_INFORMATION",
-        "attachments": [
+        "tags": [
+          "Ticket"
+        ],
+        "summary": "Send async callback from MM->E/// operation",
+        "description": "Handle async callback",
+        "operationId": "asyncCallback",
+        "parameters": [
           {
-            "content": "ZmlsZSBudW1iZXIgMQ==",
-            "mimeType": "text/plain",
-            "name": "<filename>"
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "MASMOVIL primary key of the ticket"
+            }
           }
         ],
-        "dialog": "<info requested>"
+        "requestBody": {
+          "description": "fields required in callback request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/asyncCallback"
+              },
+              "examples": {
+                "create_OK_callback": {
+                  "$ref": "#/components/examples/create_OK_callback"
+                },
+                "create_KO_callback": {
+                  "$ref": "#/components/examples/create_KO_callback"
+                },
+                "update_OK_callback": {
+                  "$ref": "#/components/examples/update_OK_callback"
+                },
+                "update_KO_callback": {
+                  "$ref": "#/components/examples/update_KO_callback"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Ticket has been updated successfully"
+          },
+          "400": {
+            "description": "BadRequest. E.G.:There is one missing field or the value is not the type required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Unauthorized1"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Unauthorized2"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                }
+              }
+            }
+          }
+        }
       }
-    "create_OK_callback":
-      value: {
-        "status_sync": "SYNC_SUCCESSFULLY",
-        "status": "OPENACTIVE",
-        "network_ticket_code": "ERICSSON-123"
+    }
+  },
+  "components": {
+    "schemas": {
+      "updateTicket": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPENACTIVE",
+              "DEFERRED.AWAITING-INFORMATION",
+              "CLOSED.CANCELED",
+              "CLOSED",
+              "CLEARED"
+            ],
+            "description": "ticket status"
+          },
+          "dialog": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "information about the issue"
+          },
+          "network_closing_category": {
+            "type": "string"
+          },
+          "network_closing_subcategory": {
+            "type": "string"
+          }
+        }
+      },
+      "asyncCallback": {
+        "required": [
+          "status_sync"
+        ],
+        "type": "object",
+        "properties": {
+          "status_sync": {
+            "type": "string",
+            "enum": [
+              "SYNC_SUCCESSFULLY",
+              "SYNC_FAILED"
+            ],
+            "description": "ticket status"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPENACTIVE",
+              "DEFERRED.AWAITING-INFORMATION",
+              "CLOSED.CANCELED",
+              "CLOSED",
+              "CLEARED"
+            ],
+            "description": "ticket status"
+          },
+          "network_ticket_code": {
+            "type": "string"
+          },
+          "remote_exception": {
+            "type": "string"
+          }
+        }
+      },
+      "attachmentBase64": {
+        "type": "object",
+        "description": "An attachment.",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The actual contents of the attachment object, if embedded, encoded as base64"
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "Attachment mime type such as extension file for video, picture and document"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the attachment"
+          }
+        }
+      },
+      "BadRequest": {
+        "type": "object",
+        "description": "bad request",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "0015"
+          },
+          "status": {
+            "type": "string",
+            "example": "Bad Request"
+          },
+          "message": {
+            "type": "string",
+            "example": "message about the error"
+          },
+          "detailMsg": {
+            "type": "string",
+            "example": "bad request error"
+          }
+        }
+      },
+      "Unauthorized1": {
+        "type": "string",
+        "example": "Jwt is expired"
+      },
+      "Unauthorized2": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "0003"
+          },
+          "status": {
+            "type": "string",
+            "example": "UNAUTHORIZED"
+          },
+          "message": {
+            "type": "string",
+            "example": "Unauthorized"
+          },
+          "detailMsg": {
+            "type": "string",
+            "example": "You are not allowed to perform this operation. Your token tenant does not match path tenant."
+          }
+        }
+      },
+      "Forbidden": {
+        "type": "string",
+        "example": "Forbidden"
+      },
+      "NotFound": {
+        "type": "object",
+        "description": "Not Found",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "0001"
+          },
+          "status": {
+            "type": "string",
+            "example": "Not Found"
+          },
+          "message": {
+            "type": "string",
+            "example": "message about the error"
+          },
+          "detailMsg": {
+            "type": "string",
+            "example": "Not Found error"
+          }
+        }
+      },
+      "InternalServerError": {
+        "type": "object",
+        "description": "Internal Server Error",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "0013"
+          },
+          "status": {
+            "type": "string",
+            "example": "Internal Server Error"
+          },
+          "message": {
+            "type": "string",
+            "example": "message about the error"
+          },
+          "detailMsg": {
+            "type": "string",
+            "example": "Internal Server Error"
+          }
+        }
       }
-    "create_KO_callback":
-      value: {
-        "status_sync": "SYNC_FAILED",
-        "remote_exception": "some error occurred during ticket creation"
+    },
+    "examples": {
+      "resolution": {
+        "value": {
+          "status": "CLEARED",
+          "network_closing_category": "<category>",
+          "network_closing_subcategory": "<subcategory>",
+          "attachments": [
+            {
+              "content": "ZmlsZSBudW1iZXIgMQ==",
+              "mimeType": "text/plain",
+              "name": "<filename>"
+            }
+          ],
+          "dialog": "<resolution comment>"
+        }
+      },
+      "send_info": {
+        "value": {
+          "dialog": "<some comment>",
+          "attachments": [
+            {
+              "content": "ZmlsZSBudW1iZXIgMQ==",
+              "mimeType": "text/plain",
+              "name": "<filename>"
+            }
+          ],
+          "labels": [
+            "label1",
+            "label2"
+          ]
+        }
+      },
+      "update_ticket": {
+        "value": {
+          "network_closing_category": "<category>",
+          "network_closing_subcategory": "<subcategory>",
+          "attachments": [
+            {
+              "content": "ZmlsZSBudW1iZXIgMQ==",
+              "mimeType": "text/plain",
+              "name": "<filename>"
+            }
+          ],
+          "dialog": "<some comment>",
+          "field1": "",
+          "field2": "",
+          "field3": "",
+          "field4": "",
+          "field5": "",
+          "fieldN": ""
+        }
+      },
+      "assign_ticket": {
+        "value": {
+          "status": "OPENACTIVE",
+          "network_ticket_code": "E-001"
+        }
+      },
+      "request_info": {
+        "value": {
+          "status": "DEFERRED.AWAITING_INFORMATION",
+          "attachments": [
+            {
+              "content": "ZmlsZSBudW1iZXIgMQ==",
+              "mimeType": "text/plain",
+              "name": "<filename>"
+            }
+          ],
+          "dialog": "<info requested>"
+        }
+      },
+      "create_OK_callback": {
+        "value": {
+          "status_sync": "SYNC_SUCCESSFULLY",
+          "status": "OPENACTIVE",
+          "network_ticket_code": "ERICSSON-123"
+        }
+      },
+      "create_KO_callback": {
+        "value": {
+          "status_sync": "SYNC_FAILED",
+          "remote_exception": "some error occurred during ticket creation"
+        }
+      },
+      "update_OK_callback": {
+        "value": {
+          "status_sync": "SYNC_SUCCESSFULLY",
+          "status": "CLEARED"
+        }
+      },
+      "update_KO_callback": {
+        "value": {
+          "status_sync": "SYNC_FAILED",
+          "remote_exception": "some error occurred during ticket update"
+        }
       }
-    "update_OK_callback":
-      value: {
-        "status_sync": "SYNC_SUCCESSFULLY",
-        "status": "CLEARED"
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
-    "update_KO_callback":
-      value: {
-        "status_sync": "SYNC_FAILED",
-        "remote_exception": "some error occurred during ticket update"
-      }
-
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-security:
-  - bearerAuth: [ ]
-externalDocs:
-  description: Find out more about Swagger
-  url: http://swagger.io
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Find out more about Swagger",
+    "url": "http://swagger.io"
+  }
+}
